@@ -2,6 +2,8 @@
 
 Everything below gets a completely fresh machine ready for all four labs (Git/PR, CI/CD, Containerization, MLOps). Pick your OS section. Verification commands are at the end of each section — run them before the session starts.
 
+**Python version note:** none of the labs use a 3.12-specific feature, so **Python 3.10 or newer is fine**. If your machine already has 3.10 or 3.11 (common on Ubuntu 22.04), don't bother installing 3.12 — just use what's there. Commands below install 3.12 where it's easy (macOS, Windows) and treat it as optional on Linux.
+
 ---
 
 ## macOS
@@ -86,6 +88,8 @@ python --version
 
 ## Linux (Ubuntu/Debian)
 
+Ubuntu's default repos ship an old Node.js (v12 on 22.04) and cap Python at 3.10/3.11 depending on release — the commands below account for both.
+
 ```bash
 sudo apt-get update
 
@@ -106,12 +110,21 @@ sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 newgrp docker   # or log out/in so the group change takes effect
 
-# Node.js 20 (via NodeSource)
+# Node.js 20 — remove the old distro package FIRST, or NodeSource's
+# install can end up shadowed by the ancient default (v12 on Ubuntu 22.04)
+sudo apt-get remove -y nodejs libnode-dev npm
+sudo apt-get autoremove -y
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# Python 3.12
-sudo apt-get install -y python3.12 python3.12-venv python3-pip
+# Python — use what's already installed if it's 3.10+ (check first: python3 --version)
+python3 --version
+
+# Only if you specifically need 3.12 and it's not available in the default repos:
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install -y python3.12 python3.12-venv python3.12-dev
 ```
 
 **Verify:**
@@ -119,13 +132,15 @@ sudo apt-get install -y python3.12 python3.12-venv python3-pip
 git --version
 gh --version
 docker run hello-world
-node --version
-python3.12 --version
+node --version        # should now print v20.x, not v12.x
+python3 --version     # 3.10+ is fine; use python3.12 --version if you installed it above
 ```
 
 ---
 
 ## After Docker Is Confirmed Working — Pull the Base Images Ahead of Time
+
+Do this once on the same network you'll be teaching on, so participants aren't all pulling multi-hundred-MB images simultaneously during the session:
 
 ```bash
 docker pull node:20-slim
@@ -151,7 +166,7 @@ schedule==1.2.1
 
 Install with:
 ```bash
-python3.12 -m venv venv
+python3 -m venv venv            # or python3.12 -m venv venv if you installed 3.12
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
@@ -170,7 +185,8 @@ No global npm installs are required — each lab's `npm install` step handles it
 ## One-Line Sanity Check (run this last, on every machine)
 
 ```bash
-git --version && docker run --rm hello-world && node --version && python3.12 --version 2>/dev/null || python --version
+git --version && docker run --rm hello-world && node --version && python3 --version
 ```
 
 If all four print version/success output without errors, the machine is ready for the full session.
+
